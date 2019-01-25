@@ -61,6 +61,17 @@ maketable <- function(var, horiz = TRUE) {
   return(if (horiz) {htab} else {t(htab)})
 }
 
+# summary
+kbsummary <- function(var, horiz = TRUE){
+  tb <- as.array(summary(df[[variable]]))
+  if (horiz) {
+    t(tb)
+  } else {
+    tb
+  }
+}
+
+
 ```
 
 
@@ -85,15 +96,6 @@ horizontalsummary <- TRUE
 ```{r quantdis}
 # table
 vtb <- kable(maketable(df[[variable]], horiz = FALSE))
-# summary
-kbsummary <- function(var, horiz = TRUE){
-  tb <- as.array(summary(df[[variable]]))
-  if (horiz) {
-    t(tb)
-  } else {
-    tb
-  }
-}
 
 vs <- kable(kbsummary(var = df[[variable]], horizontalsummary))
 
@@ -148,7 +150,7 @@ sexe (quali)
 variable <- "sexe"
 ```
 
-```{r quali}
+```{r sexe2, ref.label = "quali"}
 ```
 
 
@@ -161,10 +163,10 @@ breakscontrol <- NA
 horizontalsummary <- TRUE
 ```
 
-```{r quantdis}
+```{r frat2, ref.label = "quantdis"}
 ```
 
-```{r quantdis_show}
+```{r frat3, ref.label = "quantdis_show"}
 ```
 
 
@@ -179,5 +181,53 @@ variable <- "etablissement"
 ```
 
 
-```{r quali}
+```{r {r etab2, ref.label = "quali"}
 ```
+
+
+revenu (quanti continue)
+------------------------
+
+```{r revenu}
+variable <- "revenu"
+breakscontrol <- NA
+binscontrol = nclass.Sturges(df[[variable]])
+horizontalsummary <- TRUE
+```
+
+```{r quantcont}
+# table
+# vtb <- kable(maketable(df[[variable]], horiz = FALSE))
+
+vs <- kable(kbsummary(var = df[[variable]], horizontalsummary))
+
+# plots
+p1 <- local({
+  g <- ggplot(data = df, aes_string(variable)) + 
+    geom_histogram(bins = binscontrol)
+  if (is.na(breakscontrol)) {
+    if (is.na(binscontrol)) {
+      g
+    } else {
+      g #+ scale_x_continuous(bins = binscontrol)
+    }
+    
+  } else {
+    g #+ scale_x_continuous(breaks = breakscontrol)
+  } 
+})
+
+p2 <- ggplot(data = df, aes(x=1)) + 
+  geom_boxplot(aes_string(y=variable)) + 
+  scale_x_continuous("", breaks = NULL) +
+  coord_flip()
+
+```
+
+```{r quantcont_show}
+# vtb
+vs
+p1
+p2
+```
+
