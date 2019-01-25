@@ -1,0 +1,183 @@
+---
+title: "DataTD123"
+author: "Bruno Fischer Colonimos"
+date: "24 janvier 2019"
+output: 
+    html_document:
+      toc: yes
+      number_sections: yes
+    # pdf_document:
+    #   toc: yes
+    #   number_sections: yes
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+knitr::opts_chunk$set(echo = FALSE, fig.width = 3, fig.align = "center", fig.show = "hold", fig.asp = 1)
+
+library(dplyr)
+library(ggplot2)
+library(pander)
+```
+
+Data
+=====
+
+```{r dataget}
+datadir <- "data"
+fname <- "donneesTD1.csv"
+fpath <- file.path(datadir, fname)
+# file.exists(fpath)
+df <- read.csv(fpath, sep = ";", stringsAsFactors = FALSE) 
+```
+
+```{r dataclean}
+
+# data cleaning
+df$dept <- factor(df$dept)
+# unique(df$etablissement)
+# unique(gsub("Coll. ", "Coll ", df$etablissement))
+df$etablissement <- factor(gsub("Coll. ", "Coll ", df$etablissement))
+
+```
+
+Data, after cleaning (etablissement)
+
+```{r datashow}
+kable(df)
+kable(summary(df))
+```
+
+
+
+
+```{r anafun}
+# make a table
+
+maketable <- function(var, horiz = TRUE) {
+  efftab <- table(var)
+  htab <- as.data.frame(rbind(effectif = efftab, 
+                      frequence = prop.table(efftab) ))
+  return(if (horiz) {htab} else {t(htab)})
+}
+
+```
+
+
+
+
+
+Variable par variable
+=====================
+
+age (quanti discrete)
+----
+
+Valeurs: `r pander(sort( unique(df$age)))`. Traitement comme variable discrète.
+
+```{r age}
+variable <- "age"
+breakscontrol <- 6:14
+horizontalsummary <- TRUE
+```
+
+
+```{r quantdis}
+# table
+vtb <- kable(maketable(df[[variable]], horiz = FALSE))
+# summary
+kbsummary <- function(var, horiz = TRUE){
+  tb <- as.array(summary(df[[variable]]))
+  if (horiz) {
+    t(tb)
+  } else {
+    tb
+  }
+}
+
+vs <- kable(kbsummary(var = df[[variable]], horizontalsummary))
+
+# plots
+p1 <- local({
+  g <- ggplot(data = df, aes_string(variable)) + geom_bar(aes(y = ..prop..))
+  if (is.na(breakscontrol)) {
+    g
+  } else {
+    g + scale_x_continuous(breaks = breakscontrol)
+  }
+})
+
+  
+p2 <- ggplot(data = df, aes(x=1)) + 
+  geom_boxplot(aes_string(y=variable)) + 
+  scale_x_continuous("", breaks = NULL) +
+  coord_flip()
+
+```
+
+```{r quantdis_show}
+vtb
+vs
+p1
+p2
+```
+
+
+departement (dept) (quali)
+---------------------------
+
+```{r dept}
+variable <- "dept"
+```
+
+
+```{r quali}
+# table
+kable(maketable(df[[variable]], horiz = TRUE))
+# no summary
+# plots
+ggplot(data = df, aes_string(variable)) + geom_bar(aes(y = ..prop.., group = 1)) 
+
+```
+
+
+sexe (quali)
+------------
+
+```{r sexe}
+variable <- "sexe"
+```
+
+```{r quali}
+```
+
+
+fratrie (quanti discrete)
+-------------------------
+
+```{r fratrie}
+variable <- "fratrie"
+breakscontrol <- NA
+horizontalsummary <- TRUE
+```
+
+```{r quantdis}
+```
+
+```{r quantdis_show}
+```
+
+
+Etablissement (quali)
+----------------------
+
+Remarque: potentiellement, ces données ne sont pas "tidy", puisque cette colonne regroupe 2 variables: niveau = {ecole / college}, et statut = {public / privé}
+
+
+```{r etablissement}
+variable <- "etablissement"
+```
+
+
+```{r quali}
+```
