@@ -35,6 +35,7 @@ df <- read.csv(fpath, sep = ";", stringsAsFactors = FALSE)
 
 # data cleaning
 df$dept <- factor(df$dept)
+df$sexe <- factor(df$sexe)
 # unique(df$etablissement)
 # unique(gsub("Coll. ", "Coll ", df$etablissement))
 df$etablissement <- factor(gsub("Coll. ", "Coll ", df$etablissement))
