@@ -72,7 +72,7 @@ maketable <- function(var, cum = FALSE, horiz = TRUE) {
 
 # summary
 
-kbsummary <- function(var, horiz = TRUE, qtype = 6) {
+kbsummary <- function(var, horiz = TRUE, qtype = 2) {
         # population standard deviation
         sdpop <- function(x, ...) {
                 n <- length(x)
