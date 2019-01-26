@@ -54,21 +54,44 @@ kable(summary(df))
 ```{r anafun}
 # make a table
 
-maketable <- function(var, horiz = TRUE) {
-  efftab <- table(var)
-  htab <- as.data.frame(rbind(effectif = efftab, 
-                      frequence = prop.table(efftab) ))
-  return(if (horiz) {htab} else {t(htab)})
+maketable <- function(var, cum = FALSE, horiz = TRUE) {
+        efftab <- table(var)
+        effcum = cumsum(efftab)
+        if (cum) {
+                tab <-rbind(effectif = efftab,
+                            frequence = prop.table(efftab),
+                            eff.cum = effcum)
+        } else {
+                tab <-rbind(effectif = efftab,
+                            frequence = prop.table(efftab))
+        }
+        htab <- as.data.frame(tab)
+        return(if (horiz) {htab} else {t(htab)})
 }
 
 # summary
-kbsummary <- function(var, horiz = TRUE){
-  tb <- as.array(summary(df[[variable]]))
-  if (horiz) {
-    t(tb)
-  } else {
-    tb
-  }
+
+kbsummary <- function(var, horiz = TRUE, qtype = 6) {
+        # population standard deviation
+        sdpop <- function(x, ...) {
+                n <- length(x)
+                sqrt((n-1) / n) * sd(x, ...)
+        }
+        mysummary <- quantile(x = var, 
+                              probs = c(0, .25, .5, .75, 1), 
+                              na.rm = TRUE, type = qtype)
+        names(mysummary) <- c("Min", "Q1", "Median", "Q3", "Max")
+        
+        moresummary <- sapply(list(Mean = function(z){mean(z, na.rm = TRUE)},
+                                   Sd.pop = function(z){sdpop(z, na.rm = TRUE)},
+                                   Sd = function(z){sd(z, na.rm = TRUE)} ), 
+                              function(f){f(var)})
+        tb <- as.array(c(mysummary, moresummary))
+        if (horiz) {
+                t(tb)
+        } else {
+                tb
+        }
 }
 
 
@@ -88,14 +111,23 @@ Valeurs: `r pander(sort( unique(df$age)))`. Traitement comme variable discrète.
 
 ```{r age}
 variable <- "age"
+tablestyle <- "horiz" # "vert" or NA
+cumtable <- TRUE
 breakscontrol <- 6:14
 horizontalsummary <- TRUE
+
 ```
 
 
 ```{r quantdis}
 # table
-vtb <- kable(maketable(df[[variable]], horiz = FALSE))
+if (!is.na(tablestyle)) {
+        vtb <- kable(maketable(df[[variable]], 
+                               cum = cumtable,
+                               horiz = (tablestyle == "horiz")), 
+                     digits = 3)
+}
+
 
 vs <- kable(kbsummary(var = df[[variable]], horizontalsummary))
 
@@ -131,7 +163,6 @@ departement (dept) (quali)
 ```{r dept}
 variable <- "dept"
 ```
-
 
 ```{r quali}
 # table
@@ -180,8 +211,7 @@ Remarque: potentiellement, ces données ne sont pas "tidy", puisque cette colonn
 variable <- "etablissement"
 ```
 
-
-```{r {r etab2, ref.label = "quali"}
+```{r etab2, ref.label = "quali"}
 ```
 
 
