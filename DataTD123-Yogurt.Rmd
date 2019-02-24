@@ -1,0 +1,99 @@
+---
+title: "TD 1+2+3 Yogurt, Calculs"
+author: "Bruno Fischer Colonimos"
+date: "24 février 2019"
+output: 
+    pdf_document:
+        toc: yes
+        number_sections: yes
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+knitr::opts_chunk$set(echo = FALSE, fig.width = 3, fig.align = "center", fig.show = "hold", fig.asp = 1)
+
+library(dplyr)
+library(ggplot2)
+library(pander)
+library(reshape2)
+library(grid)
+library(gridExtra)
+
+options(scipen = 2)
+```
+
+
+Données
+=======
+
+```{r dataget}
+datadir <- "data"
+fname <- "Donnees TD-3-Yaourt.csv"
+fpath <- file.path(datadir, fname)
+# file.exists(fpath)
+df <- read.csv(fpath, sep = ";", stringsAsFactors = FALSE)
+# names(df)
+
+# fix the names(remove accents + fix revenu....)
+names(df) <- tolower(iconv(names(df),to="ASCII//TRANSLIT"))
+names(df)[-1] <- gsub(pattern ="\\..*", 
+                      replacement = "", 
+                      x = names(df)[-1] )
+
+panderOptions('missing', "")
+pander(summary(df[-1]), justify = "right")
+
+```
+
+```{r dataclean}
+
+```
+
+Description, comparaison des variables
+========================
+
+```{r desc}
+
+
+df_melt <- melt(df, id.vars = names(df)[1])
+
+ggplot(df_melt, aes(x = variable, y = value)) + geom_boxplot()
+
+```
+
+
+Liens entre les variables
+========================
+
+```{r links, fig.width=6, fig.asp=.3}
+# theme change
+themespec <- theme(plot.margin=margin(10,10,10,10))
+
+s1 <- ggplot(df, aes(aspect, gout)) + geom_point(alpha = 0.3) +
+        geom_smooth(method = "lm", se = FALSE, size = 1, linetype = 3 ) + themespec
+s2 <- ggplot(df, aes(gout, prix)) + geom_point(alpha = 0.3) +
+        geom_smooth(method = "lm", se = FALSE, size = 1, linetype = 3) + themespec
+s3 <- ggplot(df, aes(aspect, prix)) + geom_point(alpha = 0.3) +
+        geom_smooth(method = "lm", se = FALSE, size = 1, linetype = 3) + themespec
+
+allscat <- arrangeGrob(grobs = list(s1,s2,s3), nrow = 1, top = "Scatterplots")
+
+b1 <- ggplot(df, aes(aspect, gout)) + geom_boxplot(aes(group = aspect), varwidth = TRUE) +
+        geom_smooth(method = "lm", se = FALSE, size = 1, linetype = 3) + themespec
+b2 <- ggplot(df, aes(gout, prix)) + geom_boxplot(aes(group = gout), varwidth = TRUE) +
+        geom_smooth(method = "lm", se = FALSE, size = 1, linetype = 3) + themespec
+b3 <- ggplot(df, aes(aspect, prix)) + geom_boxplot(aes(group = aspect), varwidth = TRUE) +
+        geom_smooth(method = "lm", se = FALSE, size = 1, linetype = 3) + themespec
+
+allbox <- arrangeGrob(grobs = list(b1,b2,b3), nrow = 1, top = "Boxplots")
+
+grid.newpage()
+grid.draw(allscat)
+grid.newpage()
+grid.draw(allbox)
+
+
+```
+
+
+
