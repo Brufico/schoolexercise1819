@@ -3,6 +3,9 @@ title: "TD 1+2+3 Yogurt, Calculs"
 author: "Bruno Fischer Colonimos"
 date: "24 février 2019"
 output: 
+    # html_document:
+    #     toc: yes
+    #     number_sections: yes
     pdf_document:
         toc: yes
         number_sections: yes
@@ -10,7 +13,7 @@ output:
 
 ```{r setup, include=FALSE}
 library(knitr)
-knitr::opts_chunk$set(echo = FALSE, fig.width = 3, fig.align = "center", fig.show = "hold", fig.asp = 1)
+knitr::opts_chunk$set(echo = FALSE, fig.width = 3, fig.align = "center", fig.show = "hold", fig.asp = 1, results="asis")
 
 library(dplyr)
 library(ggplot2)
@@ -18,11 +21,18 @@ library(pander)
 library(reshape2)
 library(grid)
 library(gridExtra)
+library(memisc)
 
 options(scipen = 2)
+panderOptions('missing', "")
 ```
 
 
+```{r external_code, include=FALSE}
+stdfun_dir <- file.path("..", "Standardfunctions10")
+stdfun_file <- "standardfunctionsV20.R"
+if (file.exists(file.path(stdfun_dir, stdfun_file))) {source(file.path(stdfun_dir, stdfun_file))}
+```
 Données
 =======
 
@@ -34,20 +44,20 @@ fpath <- file.path(datadir, fname)
 df <- read.csv(fpath, sep = ";", stringsAsFactors = FALSE)
 # names(df)
 
-# fix the names(remove accents + fix revenu....)
+# fix the names(remove accents ....)
 names(df) <- tolower(iconv(names(df),to="ASCII//TRANSLIT"))
 names(df)[-1] <- gsub(pattern ="\\..*", 
                       replacement = "", 
                       x = names(df)[-1] )
 
-panderOptions('missing', "")
-pander(summary(df[-1]), justify = "right")
+```
+Les données n'ont pas nécessité de nettoyage préalable.
+
+```{r datadisplay}
+pander(df)
 
 ```
 
-```{r dataclean}
-
-```
 
 Description, comparaison des variables
 ========================
@@ -57,18 +67,53 @@ Description, comparaison des variables
 
 df_melt <- melt(df, id.vars = names(df)[1])
 
-ggplot(df_melt, aes(x = variable, y = value)) + geom_boxplot()
+ggplot(df_melt, aes(x = variable, y = value)) + geom_boxplot() + labs(x = NULL, y = NULL)
 
+```
+```{r pander, results="asis"}
+
+pander_with_title <- function( ..., title = "&nbsp;", caption = NULL) {
+        po <- panderOptions('knitr.auto.asis')
+        on.exit({panderOptions('knitr.auto.asis', po)})
+        panderOptions('knitr.auto.asis', FALSE)
+        pp <- pander_return(...)
+        pp <- sub("&nbsp;", title,  pp) # substitutes "&nbsp;" with title
+        if (!is.null(caption)) {pp <- c(pp, paste0("Table: ", caption))}
+        cat(pp, sep = "\n")
+        
+}
+
+pander_with_title (cbsummaries(df, names(df)[-1], extent = "long"), title = "Variable")
 ```
 
 
 Liens entre les variables
-========================
+=========================
 
-```{r links, fig.width=6, fig.asp=.3}
+Statistiques des distributions conditionnelles
+----------------------------------------------
+
+```{r linksparam, results="asis"}
+# conditional summaries
+condsumtable <- function(dframe, yvar, xvar, extent = "long"){
+        pander_with_title(condsummaries(df,  yvar, xvar, extent = extent), title = xvar,
+               caption = paste0("Statistiques de `", yvar, "`, pour chaque valeur de `",  xvar, "`") )
+}
+
+condsumtable(dframe = df, yvar = "gout", xvar = "aspect",  extent = "short")
+condsumtable(dframe = df, yvar = "prix", xvar = "aspect",  extent = "short")
+condsumtable(dframe = df, yvar = "prix", xvar = "gout",  extent = "short")
+```
+
+
+Graphiques
+----------
+
+```{r linksgraph, fig.width=6, fig.asp=.3}
 # theme change
-themespec <- theme(plot.margin=margin(10,10,10,10))
+themespec <- theme(plot.margin=margin(10,10,10,10)) # more margin for combining graphs
 
+# scatterplots
 s1 <- ggplot(df, aes(aspect, gout)) + geom_point(alpha = 0.3) +
         geom_smooth(method = "lm", se = FALSE, size = 1, linetype = 3 ) + themespec
 s2 <- ggplot(df, aes(gout, prix)) + geom_point(alpha = 0.3) +
@@ -78,6 +123,18 @@ s3 <- ggplot(df, aes(aspect, prix)) + geom_point(alpha = 0.3) +
 
 allscat <- arrangeGrob(grobs = list(s1,s2,s3), nrow = 1, top = "Scatterplots")
 
+# jitterplots
+j1 <- ggplot(df, aes(aspect, gout)) + geom_jitter(alpha = 0.3, width = .2, height = .2) +
+        geom_smooth(method = "lm", se = FALSE, size = 1, linetype = 3 ) + themespec
+j2 <- ggplot(df, aes(gout, prix)) + geom_jitter(alpha = 0.3, width = .2, height = .2) +
+        geom_smooth(method = "lm", se = FALSE, size = 1, linetype = 3) + themespec
+j3 <- ggplot(df, aes(aspect, prix)) + geom_jitter(alpha = 0.3, width = .2, height = .2) +
+        geom_smooth(method = "lm", se = FALSE, size = 1, linetype = 3) + themespec
+
+alljit <- arrangeGrob(grobs = list(j1,j2,j3), nrow = 1, top = "Jittered scatterplots")
+
+
+# Boxplots
 b1 <- ggplot(df, aes(aspect, gout)) + geom_boxplot(aes(group = aspect), varwidth = TRUE) +
         geom_smooth(method = "lm", se = FALSE, size = 1, linetype = 3) + themespec
 b2 <- ggplot(df, aes(gout, prix)) + geom_boxplot(aes(group = gout), varwidth = TRUE) +
@@ -89,11 +146,18 @@ allbox <- arrangeGrob(grobs = list(b1,b2,b3), nrow = 1, top = "Boxplots")
 
 grid.newpage()
 grid.draw(allscat)
+
+grid.newpage()
+grid.draw(alljit)
+
 grid.newpage()
 grid.draw(allbox)
 
 
 ```
 
+Conclusion
+------------
 
+Les statistiques des distributions conditionnelles et les graphiques suggèrent un lien net entre `aspect`  et `goût`. Le prix ne semble pas clairement lié à ces variables. 
 
